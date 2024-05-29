@@ -159,3 +159,53 @@ for (shapefile in shapefiles) {
 
 
 
+
+basin_shps <- lapply(shapefiles, st_read)
+
+# Loop through each shapefile
+for (i in seq_along(basin_shps)) {
+  # Get the current shapefile
+  basin_shp <- basin_shps[[i]]
+  
+  # Get Daymet data
+  day <- FedData::get_daymet(template = basin_shp, label = "PRCP", 
+                              elements = "prcp", years = 1980:2023, tempo = "day")
+  
+  # Create as data frame
+  day <- as.data.frame(day)
+  
+  # Extract day column names (dates) using pattern 
+  day_columns <- grep("^prcp.", names(day), value = TRUE)
+  
+  # Calculate column means since each column represents a day
+  day_means <- data.frame(Mean = colMeans(day))
+  
+  # Combine dataframe of dates and column means
+  result_df <- data.frame(Day = seq_along(day_columns), Mean = day_means)
+  
+  # Change row names to column to get dates
+  prcp <- tibble::rownames_to_column(result_df, "rn")
+  
+  # Remove "prcp." from row names 
+  prcp$rn <- gsub("prcp.", "", as.character(prcp$rn))
+  
+  # Create date column 
+  prcp$DATE <- ymd(prcp$rn)
+  prcp <- prcp %>% rename(PRCP = Mean) 
+  prcp$PRCP <- round(prcp$PRCP, digits = 2)
+  prcp <- prcp[,-c(1:2)]
+  
+  # Write to CSV with shapefile ID as filename
+  shapefile_id <- tools::file_path_sans_ext(basename(shapefiles[i]))
+  csv_filename <- file.path(csv_folder, paste0(shapefile_id,"_Daymet_prcp.csv"))
+  write.csv(prcp, file = csv_filename, row.names = FALSE)
+  
+  # Print message indicating completion for the current shapefile
+  cat("Processed shapefile:", shapefile_id, "\n")
+  
+  # Remove objects to free memory
+  rm(day, day_columns, day_means, result_df, prcp, shapefile_id, csv_filename)
+  # Garbage collector returns memory to OS
+  gc()
+}
+
