@@ -1,0 +1,136 @@
+# 6/3/2024
+# qgis python code to create an FID value for each basin shapefile in the attribute table that corresponds to the basin ID
+# currently the FID value is 0 for each basin shapefile that was downloaded from NHD
+
+from qgis.core import QgsProject, QgsField, QgsVectorLayer
+from qgis.PyQt.QtCore import QVariant
+import re
+
+# Get all vector layers
+vector_layers = [layer for layer in QgsProject.instance().mapLayers().values() if isinstance(layer, QgsVectorLayer)]
+
+# Regex pattern to extract unique identifier from the layer name
+pattern = re.compile(r"basin_USGS-(\d{8})")
+
+# Iterate through each vector layer
+for layer in vector_layers:
+    match = pattern.match(layer.name())
+    if match:
+        unique_id = match.group(1)
+        
+        # Add a new field for FID if it doesn't already exist
+        if 'FID' not in [field.name() for field in layer.fields()]:
+            layer.dataProvider().addAttributes([QgsField('FID', QVariant.String)])
+            layer.updateFields()
+        
+        # Update FID field for each feature in the layer
+        with edit(layer):
+            for feature in layer.getFeatures():
+                feature.setAttribute('FID', unique_id)
+                layer.updateFeature(feature)
+
+print("FID field added and updated for each shapefile layer.")
+
+
+
+# clip each shapefile to raster layer using GDAL from toolbox 
+import os
+import processing
+
+# Define paths
+raster_file = "D:/University of Texas at Dallas/NLCD 1992/nlcd_1992_30meter_whole/nlcd_1992_30meter_whole.img"
+shapefile_directory = "D:/University of Texas at Dallas/CombinedDataset/Shapefiles"
+output_directory = "D:/University of Texas at Dallas/CombinedDataset/Land_cover"
+
+# Iterate through each shapefile
+for shapefile_name in os.listdir(shapefile_directory):
+    if shapefile_name.endswith(".shp"):
+        shapefile_path = os.path.join(shapefile_directory, shapefile_name)
+        basin_id = os.path.splitext(shapefile_name)[0].split("-")[1]  # Extract basin ID from shapefile name
+        
+        # Define output file path
+        output_path = os.path.join(output_directory, f"{basin_id}_clipped.tif")
+        
+        # Clip raster by mask layer using GDAL
+        processing.run("gdal:cliprasterbymasklayer",
+                        {'INPUT': raster_file,
+                         'MASK': shapefile_path,
+                         'SOURCE_CRS': None,
+                         'TARGET_CRS': None,
+                         'NODATA': None,
+                         'ALPHA_BAND': False,
+                         'CROP_TO_CUTLINE': True,
+                         'KEEP_RESOLUTION': False,
+                         'OPTIONS': '',
+                         'DATA_TYPE': 0,
+                         'EXTRA': '',
+                         'OUTPUT': output_path})
+        
+        print(f"Raster clipped for basin ID: {basin_id}")
+        
+print("Clipping process completed.")
+
+
+
+
+
+
+import os
+import csv
+import numpy as np
+from osgeo import gdal
+
+# Directory containing clipped raster files
+clipped_raster_directory = "D:/University of Texas at Dallas/CombinedDataset/Land_cover"
+
+# Dictionary to store unique raster values for each basin
+unique_values_dict = {}
+
+# Iterate through each clipped raster file in the directory
+for raster_file in os.listdir(clipped_raster_directory):
+    if raster_file.endswith(".tif"):
+        raster_path = os.path.join(clipped_raster_directory, raster_file)
+        basin_id = raster_file.split("_")[0]  # Extract basin ID from raster filename
+        
+        # Open raster file
+        raster_ds = gdal.Open(raster_path)
+        if raster_ds is None:
+            print(f"Failed to open raster file: {raster_path}. Skipping.")
+            continue
+        
+        # Read raster data
+        raster_band = raster_ds.GetRasterBand(1)
+        raster_array = raster_band.ReadAsArray()
+        
+        # Get unique raster values
+        unique_values = np.unique(raster_array)
+        
+        # Store unique raster values in the dictionary
+        unique_values_dict[basin_id] = unique_values.tolist()
+        
+        print(f"Processed basin ID: {basin_id}")
+
+
+# Write unique raster values to CSV file
+output_csv = "D:/University of Texas at Dallas/CombinedDataset/Land_cover/unique_raster_values.csv"
+with open(output_csv, 'w', newline='') as csvfile:
+    csv_writer = csv.writer(csvfile)
+    
+    # Write header
+    csv_writer.writerow(['Basin ID', 'Unique Raster Values'])
+    
+    # Write data
+    for basin_id, values in unique_values_dict.items():
+        if not values:
+            values = ['No unique values']
+        csv_writer.writerow([basin_id, ', '.join(map(str, values))])
+
+print(f"Unique raster values written to: {output_csv}")
+
+
+# R CODE TO GET UNIQUE VALUE COUNT 
+r = terra::rast("D:/University of Texas at Dallas/CombinedDataset/Land_cover/01030500_clipped.tif")
+test = unique(r)
+test2 = freq(r)
+
+
