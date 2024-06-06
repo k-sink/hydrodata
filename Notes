@@ -1,4 +1,5 @@
 # 6/3/2024
+
 # qgis python code to create an FID value for each basin shapefile in the attribute table that corresponds to the basin ID
 # currently the FID value is 0 for each basin shapefile that was downloaded from NHD
 
@@ -32,8 +33,7 @@ for layer in vector_layers:
 print("FID field added and updated for each shapefile layer.")
 
 
-
-# clip each shapefile to raster layer using GDAL from toolbox 
+# CLIP SHAPEFILE TO RASTER (LANDCOVER) USING GDAL FROM TOOLBOX IN QGIS PYTHON
 import os
 import processing
 
@@ -71,66 +71,63 @@ for shapefile_name in os.listdir(shapefile_directory):
 print("Clipping process completed.")
 
 
+CRS is EPSG:5070-NAD83 Conus Albers (30m x 30m) for NLCD1992                
+11    Open Water
+12    Perennial Ice/Snow
+21    Low Intensity Residential
+22    High Intensity Residential
+23    Commercial/Industrial/Transportation
+31    Bare Rock/Sand/Clay
+32    Quarries/Strip Mines/Gravel Pits
+33    Transitional
+41    Deciduous Forest
+42    Evergreen Forest
+43    Mixed Forest
+51    Shrubland
+61    Orchards/Vineyards/Other
+71    Grasslands/Herbaceous
+81    Pasture/Hay
+82    Row Crops
+83    Small Grains
+84    Fallow
+85    Urban/Recreational Grasses
+91    Woody Wetlands
+92    Emergent Herbaceous Wetlands
 
-
-
-
-import os
-import csv
-import numpy as np
-from osgeo import gdal
-
-# Directory containing clipped raster files
-clipped_raster_directory = "D:/University of Texas at Dallas/CombinedDataset/Land_cover"
-
-# Dictionary to store unique raster values for each basin
-unique_values_dict = {}
-
-# Iterate through each clipped raster file in the directory
-for raster_file in os.listdir(clipped_raster_directory):
-    if raster_file.endswith(".tif"):
-        raster_path = os.path.join(clipped_raster_directory, raster_file)
-        basin_id = raster_file.split("_")[0]  # Extract basin ID from raster filename
-        
-        # Open raster file
-        raster_ds = gdal.Open(raster_path)
-        if raster_ds is None:
-            print(f"Failed to open raster file: {raster_path}. Skipping.")
-            continue
-        
-        # Read raster data
-        raster_band = raster_ds.GetRasterBand(1)
-        raster_array = raster_band.ReadAsArray()
-        
-        # Get unique raster values
-        unique_values = np.unique(raster_array)
-        
-        # Store unique raster values in the dictionary
-        unique_values_dict[basin_id] = unique_values.tolist()
-        
-        print(f"Processed basin ID: {basin_id}")
-
-
-# Write unique raster values to CSV file
-output_csv = "D:/University of Texas at Dallas/CombinedDataset/Land_cover/unique_raster_values.csv"
-with open(output_csv, 'w', newline='') as csvfile:
-    csv_writer = csv.writer(csvfile)
-    
-    # Write header
-    csv_writer.writerow(['Basin ID', 'Unique Raster Values'])
-    
-    # Write data
-    for basin_id, values in unique_values_dict.items():
-        if not values:
-            values = ['No unique values']
-        csv_writer.writerow([basin_id, ', '.join(map(str, values))])
-
-print(f"Unique raster values written to: {output_csv}")
-
-
-# R CODE TO GET UNIQUE VALUE COUNT 
-r = terra::rast("D:/University of Texas at Dallas/CombinedDataset/Land_cover/01030500_clipped.tif")
-test = unique(r)
-test2 = freq(r)
-
-
+Albers Conical Equal Area (30m x 30m) for NLCD2001, 2004, 2006
+11    Open water - areas of open water, generally with less than 25% cover of vegetation or soil
+12    Perennial Ice/Snow - areas characterized by a perennial cover of ice and/or snow, generally greater than 25% total cover
+21    Developed, Open Space - areas with a mixture of some constructed materials, but mostly vegetation in the form of lawn grasses. 
+                              Impervious surfaces account for less than 20% of total cover. These areas most commonly include large-lot 
+                              single-family housing units, parks, golf courses, and vegetation planted in developed settings for recreation, 
+                              erosion control, or aesthetic purposes.
+22    Developed, Low Intensity - areas with a mixture of constructed materials and vegetation. Impervious surfaces account for 20% to 49% percent of total cover. 
+                                These areas most commonly include single-family housing units.
+23    Developed, Medium Intensity -areas with a mixture of constructed materials and vegetation. Impervious surfaces account for 50% to 79% of the total cover. 
+                                    These areas most commonly include single-family housing units.
+24    Developed High Intensity-highly developed areas where people reside or work in high numbers. Examples include apartment complexes, row houses and commercial/industrial. 
+                                Impervious surfaces account for 80% to 100% of the total cover.
+31    Barren Land (Rock/Sand/Clay) - areas of bedrock, desert pavement, scarps, talus, slides, volcanic material, glacial debris, sand dunes, strip mines, gravel pits and other 
+                                        accumulations of earthen material. Generally, vegetation accounts for less than 15% of total cover. 
+41    Deciduous Forest - areas dominated by trees generally greater than 5 meters tall, and greater than 20% of total vegetation cover. 
+                        More than 75% of the tree species shed foliage simultaneously in response to seasonal change.
+42    Evergreen Forest - areas dominated by trees generally greater than 5 meters tall, and greater than 20% of total vegetation cover. 
+                        More than 75% of the tree species maintain their leaves all year. Canopy is never without green foliage.
+43    Mixed Forest - areas dominated by trees generally greater than 5 meters tall, and greater than 20% of total vegetation cover. 
+                    Neither deciduous nor evergreen species are greater than 75% of total tree cover.	 
+51    Dwarf Scrub - Alaska only areas dominated by shrubs less than 20 centimeters tall with shrub canopy typically greater than 20% of total vegetation. 
+                    This type is often co-associated with grasses, sedges, herbs, and non-vascular vegetation.
+52    Shrub/Scrub - areas dominated by shrubs; less than 5 meters tall with shrub canopy typically greater than 20% of total vegetation. This class includes true shrubs, 
+                    young trees in an early successional stage or trees stunted from environmental conditions.
+71    Grassland/Herbaceous - areas dominated by gramanoid or herbaceous vegetation, generally greater than 80% of total vegetation. 
+                            These areas are not subject to intensive management such as tilling, but can be utilized for grazing.
+72    Sedge/Herbaceous - Alaska only areas dominated by sedges and forbs, generally greater than 80% of total vegetation. This type can occur with 
+                        significant other grasses or other grass like plants, and includes sedge tundra, and sedge tussock tundra.
+73    Lichens - Alaska only areas dominated by fruticose or foliose lichens generally greater than 80% of total vegetation.
+74    Moss - Alaska only areas dominated by mosses, generally greater than 80% of total vegetation.
+81    Pasture/Hay - areas of grasses, legumes, or grass-legume mixtures planted for livestock grazing or the production of seed or hay crops, typically on a 
+                    perennial cycle. Pasture/hay vegetation accounts for greater than 20% of total vegetation.
+82    Cultivated Crops - areas used for the production of annual crops, such as corn, soybeans, vegetables, tobacco, and cotton, and also perennial woody 
+                        crops such as orchards and vineyards. Crop vegetation accounts for greater than 20% of total vegetation. This class also includes all land being actively tilled.
+90    Woody Wetlands - areas where forest or shrubland vegetation accounts for greater than 20% of vegetative cover and the soil or substrate is periodically saturated with or covered with water.
+95    Emergent Herbaceous Wetlands - areas where perennial herbaceous vegetation accounts for greater than 80% of vegetative cover and the soil or substrate is periodically saturated with or covered with water.
