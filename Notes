@@ -1,4 +1,26 @@
-# 6/3/2024
+# Creating dataset for CAMELS and MOPEX watersheds
+
+shapefiles, precipitation, temperature data, attributes, streamflow
+daily values for 1/1/1980 to 12/31/2023 
+use CAMELS, MOPEX, GAGESII information and extend both from end dates
+
+######################################################################################################
+5/13/2024
+
+Obtain list of gauge ids combining MOPEX (431) and CAMELS (671) total of 1,050 minus the 52 common basins
+Download basin boundaries for watersheds using NLDI and R, save as shapefiles (1,043 basins)
+Download discharge data for 1/1/1980 to present as csv files, discharge in ft3/s using R
+
+Discharge files downloaded 1,032 gauges 
+
+######################################################################################################
+5/16/2024
+
+Download Daymet data using basin boundary shapefile for daily PRCP beginning 1/1/1980
+Uses THREDDS server 
+
+######################################################################################################
+6/3/2024
 
 # qgis python code to create an FID value for each basin shapefile in the attribute table that corresponds to the basin ID
 # currently the FID value is 0 for each basin shapefile that was downloaded from NHD
@@ -131,3 +153,43 @@ Albers Conical Equal Area (30m x 30m) for NLCD2001, 2004, 2006
                         crops such as orchards and vineyards. Crop vegetation accounts for greater than 20% of total vegetation. This class also includes all land being actively tilled.
 90    Woody Wetlands - areas where forest or shrubland vegetation accounts for greater than 20% of vegetative cover and the soil or substrate is periodically saturated with or covered with water.
 95    Emergent Herbaceous Wetlands - areas where perennial herbaceous vegetation accounts for greater than 80% of vegetative cover and the soil or substrate is periodically saturated with or covered with water.
+
+
+######################################################################################################
+6/13/2024
+
+Area not matching for some basins between NLCD pixel count and provided value (GAGES II, NWIS)
+Used MRLC map viewer to upload shapefile with EPSG 3857 projection and then clipped NLCD raster. 
+Resulting pixel counts were the same as those determined using QGIS method clipping full raster to shapefile. 
+Areas include NWIS provided drainage area (mi2), CAMELS = GAGESII (sq km), NLCD derived (pixel count * 900 = m2)
+Catchment attributes can be directly obtained using R and NLDI from dataRetrieval package
+
+Combined MOPEX and CAMELS gauge values = 1050  (7 of MOPEX gauges are not in GAGESII dataset), check to see omission reasons 
+01361000    Kinderhook creek at Rossman NY      missing large amount of discharge data (10/1/1968 - 7/31/2011)
+05546500    Fox River at Wilmot WI              data availability begins on 10/1/1986
+06868000    Saline River near Wilson KS            discharge 5/11/1929 to 9/29/1963
+06884500    L Blue River at Waterville KS            not returned in NWIS request
+06890500    Delaware River at Valley Falls KS       discharge 6/16/1922 to 9/29/1967
+11210500    Kaweah River near three Rivers CA       discharge 5/1/1903 to 9/29/1961
+11222000    Kings River a Piedra CA                discharge 10/1/1895 to 9/29/1959
+
+Gaugelist.csv with 1043 catchments 
+Add leading zero to gauge id in excel, select cell, format cells, custom, put number of zeroes such as (8) 00000000 to add a leading zero to 7 digit numbers
+Find matching IDs between files, highlight the page (copy so both are on the same page), conditional formatting, duplicates, highlight red
+
+NWIS date range for discharge for 1043 basins, a few duplicates returned in query with two different database identifiers, checked on NWIS site 
+02196000    CAMELS    two discharge availability date ranges, starting 11/1/1929 and ending 9/29/2005 and another ending current date, taking current
+                      126805 [(2)] duplicate entry deleted 
+03213000    MOPEX    Tug Fork at Litwar, WV   data available for 6/1/1930 to 9/30/1984 and then does not resume until 9/30/2019  remove gauge 
+07222500    MOPEX    Conchas River at Variadero, NM  data available for 10/1/1936 to 9/29/1996 and then resumes 6/30/2021  remove gauge
+07348000    MOPEX    Twelve Mile Bayou near Dixie, LA  data available for 10/1/1942 to 9/29/1995 and then resumes 3/9/2023  remove gauge
+12010000    CAMELS   two discharge records, data available for 10/1/1929 to current, other discharge for STILLING WELL, deleting duplicate
+
+Current total 1,040 gauges 
+NWIS date range results in 1,038 gauges
+
+07074000    Strawberry River near Poughkeepsie, AR
+13298500    Salmon River near Challis, ID
+
+
+
