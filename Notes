@@ -1,0 +1,195 @@
+# Creating dataset for CAMELS and MOPEX watersheds
+
+shapefiles, precipitation, temperature data, attributes, streamflow
+daily values for 1/1/1980 to 12/31/2023 
+use CAMELS, MOPEX, GAGESII information and extend both from end dates
+
+######################################################################################################
+5/13/2024
+
+Obtain list of gauge ids combining MOPEX (431) and CAMELS (671) total of 1,050 minus the 52 common basins
+Download basin boundaries for watersheds using NLDI and R, save as shapefiles (1,043 basins)
+Download discharge data for 1/1/1980 to present as csv files, discharge in ft3/s using R
+
+Discharge files downloaded 1,032 gauges 
+
+######################################################################################################
+5/16/2024
+
+Download Daymet data using basin boundary shapefile for daily PRCP beginning 1/1/1980
+Uses THREDDS server 
+
+######################################################################################################
+6/3/2024
+
+# qgis python code to create an FID value for each basin shapefile in the attribute table that corresponds to the basin ID
+# currently the FID value is 0 for each basin shapefile that was downloaded from NHD
+
+from qgis.core import QgsProject, QgsField, QgsVectorLayer
+from qgis.PyQt.QtCore import QVariant
+import re
+
+# Get all vector layers
+vector_layers = [layer for layer in QgsProject.instance().mapLayers().values() if isinstance(layer, QgsVectorLayer)]
+
+# Regex pattern to extract unique identifier from the layer name
+pattern = re.compile(r"basin_USGS-(\d{8})")
+
+# Iterate through each vector layer
+for layer in vector_layers:
+    match = pattern.match(layer.name())
+    if match:
+        unique_id = match.group(1)
+        
+        # Add a new field for FID if it doesn't already exist
+        if 'FID' not in [field.name() for field in layer.fields()]:
+            layer.dataProvider().addAttributes([QgsField('FID', QVariant.String)])
+            layer.updateFields()
+        
+        # Update FID field for each feature in the layer
+        with edit(layer):
+            for feature in layer.getFeatures():
+                feature.setAttribute('FID', unique_id)
+                layer.updateFeature(feature)
+
+print("FID field added and updated for each shapefile layer.")
+
+
+# CLIP SHAPEFILE TO RASTER (LANDCOVER) USING GDAL FROM TOOLBOX IN QGIS PYTHON
+import os
+import processing
+
+# Define paths
+raster_file = "D:/University of Texas at Dallas/NLCD 1992/nlcd_1992_30meter_whole/nlcd_1992_30meter_whole.img"
+shapefile_directory = "D:/University of Texas at Dallas/CombinedDataset/Shapefiles"
+output_directory = "D:/University of Texas at Dallas/CombinedDataset/Land_cover"
+
+# Iterate through each shapefile
+for shapefile_name in os.listdir(shapefile_directory):
+    if shapefile_name.endswith(".shp"):
+        shapefile_path = os.path.join(shapefile_directory, shapefile_name)
+        basin_id = os.path.splitext(shapefile_name)[0].split("-")[1]  # Extract basin ID from shapefile name
+        
+        # Define output file path
+        output_path = os.path.join(output_directory, f"{basin_id}_clipped.tif")
+        
+        # Clip raster by mask layer using GDAL
+        processing.run("gdal:cliprasterbymasklayer",
+                        {'INPUT': raster_file,
+                         'MASK': shapefile_path,
+                         'SOURCE_CRS': None,
+                         'TARGET_CRS': None,
+                         'NODATA': None,
+                         'ALPHA_BAND': False,
+                         'CROP_TO_CUTLINE': True,
+                         'KEEP_RESOLUTION': False,
+                         'OPTIONS': '',
+                         'DATA_TYPE': 0,
+                         'EXTRA': '',
+                         'OUTPUT': output_path})
+        
+        print(f"Raster clipped for basin ID: {basin_id}")
+        
+print("Clipping process completed.")
+
+
+CRS is EPSG:5070-NAD83 Conus Albers (30m x 30m) for NLCD1992                
+11    Open Water
+12    Perennial Ice/Snow
+21    Low Intensity Residential
+22    High Intensity Residential
+23    Commercial/Industrial/Transportation
+31    Bare Rock/Sand/Clay
+32    Quarries/Strip Mines/Gravel Pits
+33    Transitional
+41    Deciduous Forest
+42    Evergreen Forest
+43    Mixed Forest
+51    Shrubland
+61    Orchards/Vineyards/Other
+71    Grasslands/Herbaceous
+81    Pasture/Hay
+82    Row Crops
+83    Small Grains
+84    Fallow
+85    Urban/Recreational Grasses
+91    Woody Wetlands
+92    Emergent Herbaceous Wetlands
+
+Albers Conical Equal Area (30m x 30m) for NLCD2001, 2004, 2006
+11    Open water - areas of open water, generally with less than 25% cover of vegetation or soil
+12    Perennial Ice/Snow - areas characterized by a perennial cover of ice and/or snow, generally greater than 25% total cover
+21    Developed, Open Space - areas with a mixture of some constructed materials, but mostly vegetation in the form of lawn grasses. 
+                              Impervious surfaces account for less than 20% of total cover. These areas most commonly include large-lot 
+                              single-family housing units, parks, golf courses, and vegetation planted in developed settings for recreation, 
+                              erosion control, or aesthetic purposes.
+22    Developed, Low Intensity - areas with a mixture of constructed materials and vegetation. Impervious surfaces account for 20% to 49% percent of total cover. 
+                                These areas most commonly include single-family housing units.
+23    Developed, Medium Intensity -areas with a mixture of constructed materials and vegetation. Impervious surfaces account for 50% to 79% of the total cover. 
+                                    These areas most commonly include single-family housing units.
+24    Developed High Intensity-highly developed areas where people reside or work in high numbers. Examples include apartment complexes, row houses and commercial/industrial. 
+                                Impervious surfaces account for 80% to 100% of the total cover.
+31    Barren Land (Rock/Sand/Clay) - areas of bedrock, desert pavement, scarps, talus, slides, volcanic material, glacial debris, sand dunes, strip mines, gravel pits and other 
+                                        accumulations of earthen material. Generally, vegetation accounts for less than 15% of total cover. 
+41    Deciduous Forest - areas dominated by trees generally greater than 5 meters tall, and greater than 20% of total vegetation cover. 
+                        More than 75% of the tree species shed foliage simultaneously in response to seasonal change.
+42    Evergreen Forest - areas dominated by trees generally greater than 5 meters tall, and greater than 20% of total vegetation cover. 
+                        More than 75% of the tree species maintain their leaves all year. Canopy is never without green foliage.
+43    Mixed Forest - areas dominated by trees generally greater than 5 meters tall, and greater than 20% of total vegetation cover. 
+                    Neither deciduous nor evergreen species are greater than 75% of total tree cover.	 
+51    Dwarf Scrub - Alaska only areas dominated by shrubs less than 20 centimeters tall with shrub canopy typically greater than 20% of total vegetation. 
+                    This type is often co-associated with grasses, sedges, herbs, and non-vascular vegetation.
+52    Shrub/Scrub - areas dominated by shrubs; less than 5 meters tall with shrub canopy typically greater than 20% of total vegetation. This class includes true shrubs, 
+                    young trees in an early successional stage or trees stunted from environmental conditions.
+71    Grassland/Herbaceous - areas dominated by gramanoid or herbaceous vegetation, generally greater than 80% of total vegetation. 
+                            These areas are not subject to intensive management such as tilling, but can be utilized for grazing.
+72    Sedge/Herbaceous - Alaska only areas dominated by sedges and forbs, generally greater than 80% of total vegetation. This type can occur with 
+                        significant other grasses or other grass like plants, and includes sedge tundra, and sedge tussock tundra.
+73    Lichens - Alaska only areas dominated by fruticose or foliose lichens generally greater than 80% of total vegetation.
+74    Moss - Alaska only areas dominated by mosses, generally greater than 80% of total vegetation.
+81    Pasture/Hay - areas of grasses, legumes, or grass-legume mixtures planted for livestock grazing or the production of seed or hay crops, typically on a 
+                    perennial cycle. Pasture/hay vegetation accounts for greater than 20% of total vegetation.
+82    Cultivated Crops - areas used for the production of annual crops, such as corn, soybeans, vegetables, tobacco, and cotton, and also perennial woody 
+                        crops such as orchards and vineyards. Crop vegetation accounts for greater than 20% of total vegetation. This class also includes all land being actively tilled.
+90    Woody Wetlands - areas where forest or shrubland vegetation accounts for greater than 20% of vegetative cover and the soil or substrate is periodically saturated with or covered with water.
+95    Emergent Herbaceous Wetlands - areas where perennial herbaceous vegetation accounts for greater than 80% of vegetative cover and the soil or substrate is periodically saturated with or covered with water.
+
+
+######################################################################################################
+6/13/2024
+
+Area not matching for some basins between NLCD pixel count and provided value (GAGES II, NWIS)
+Used MRLC map viewer to upload shapefile with EPSG 3857 projection and then clipped NLCD raster. 
+Resulting pixel counts were the same as those determined using QGIS method clipping full raster to shapefile. 
+Areas include NWIS provided drainage area (mi2), CAMELS = GAGESII (sq km), NLCD derived (pixel count * 900 = m2)
+Catchment attributes can be directly obtained using R and NLDI from dataRetrieval package
+
+Combined MOPEX and CAMELS gauge values = 1050  (7 of MOPEX gauges are not in GAGESII dataset), check to see omission reasons 
+01361000    Kinderhook creek at Rossman NY      missing large amount of discharge data (10/1/1968 - 7/31/2011)
+05546500    Fox River at Wilmot WI              data availability begins on 10/1/1986
+06868000    Saline River near Wilson KS            discharge 5/11/1929 to 9/29/1963
+06884500    L Blue River at Waterville KS            not returned in NWIS request
+06890500    Delaware River at Valley Falls KS       discharge 6/16/1922 to 9/29/1967
+11210500    Kaweah River near three Rivers CA       discharge 5/1/1903 to 9/29/1961
+11222000    Kings River a Piedra CA                discharge 10/1/1895 to 9/29/1959
+
+Gaugelist.csv with 1043 catchments 
+Add leading zero to gauge id in excel, select cell, format cells, custom, put number of zeroes such as (8) 00000000 to add a leading zero to 7 digit numbers
+Find matching IDs between files, highlight the page (copy so both are on the same page), conditional formatting, duplicates, highlight red
+
+NWIS date range for discharge for 1043 basins, a few duplicates returned in query with two different database identifiers, checked on NWIS site 
+02196000    CAMELS    two discharge availability date ranges, starting 11/1/1929 and ending 9/29/2005 and another ending current date, taking current
+                      126805 [(2)] duplicate entry deleted 
+03213000    MOPEX    Tug Fork at Litwar, WV   data available for 6/1/1930 to 9/30/1984 and then does not resume until 9/30/2019  remove gauge 
+07222500    MOPEX    Conchas River at Variadero, NM  data available for 10/1/1936 to 9/29/1996 and then resumes 6/30/2021  remove gauge
+07348000    MOPEX    Twelve Mile Bayou near Dixie, LA  data available for 10/1/1942 to 9/29/1995 and then resumes 3/9/2023  remove gauge
+12010000    CAMELS   two discharge records, data available for 10/1/1929 to current, other discharge for STILLING WELL, deleting duplicate
+
+Current total 1,040 gauges 
+NWIS date range results in 1,038 gauges
+
+07074000    Strawberry River near Poughkeepsie, AR
+13298500    Salmon River near Challis, ID
+
+
+
