@@ -26,7 +26,7 @@ gauges = as.character(gauges$GaugeID)
 # add leading zero to gauges with 7 characters to make it an 8 digit value
 gauges = str_pad(gauges, max(nchar(gauges)), side = "left", pad = "0")
 
-# obtain site information about the gauges
+# obtain site information about the gauges (station name, drainage area, latitude, longitude)
 siteinfo = readNWISsite(gauges)
 # get available data for daily values (service), discharge (parameterCd), mean value (statCd)
 available = whatNWISdata(siteNumber = gauges, service = "dv", parameterCd = "00060", statCd = "00003")
@@ -70,7 +70,7 @@ for (site_id in nwis_site_ids) {
   # get NLDI feature for the NWIS site
   #site = get_nldi_feature(nldi_query)
   
-  # get NLDI basin for the NWIS site
+  # get NLDI basin for the NWIS site as sf dataframe, CRS is WGS 84
   basin = get_nldi_basin(nldi_feature = nldi_query)
 
   # create the file path for saving the shapefile
@@ -84,7 +84,7 @@ for (site_id in nwis_site_ids) {
 }
 
 ########################################################################
-## DAYMET DATA DOWNLOAD ##
+## DAYMET DATA DOWNLOAD USING FEDDATA PACKAGE ##
 ########################################################################
 # download Daymet using daymetr and FedData packages 
 # https://cran.r-project.org/web/packages/daymetr/index.html
@@ -113,9 +113,13 @@ shapefiles = list.files(path = folder_path, pattern = "\\.shp$", full.names = TR
 for (shapefile in shapefiles) {
   
    # read shapefile
-  basin_shp = st_read(shapefile)
+  basin_shp = sf::st_read(shapefile)
   
-  # get Daymet data
+  # make sure the shapefile is in the same CRS projection (Lambert Conformal Conic) as Daymet
+  daymet_crs = "+proj=lcc +lat_0=42.5 +lon_0=-100 +lat_1=25 +lat_2=60 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
+  basin_shp = sf::st_transform(basin_shp, crs = daymet_crs)
+  
+  # get Daymet data, retrieves as spat raster
   day = FedData::get_daymet(template = basin_shp, label = "PRCP", 
                             elements = "prcp", years = 1980:2023, tempo = "day")
   
@@ -157,55 +161,64 @@ for (shapefile in shapefiles) {
   gc()
 }
 
+########################################################################
+## DAYMET DATA DOWNLOAD USING CLIMATER PACKAGE ##
+########################################################################
+library(climateR)
 
-
-
-basin_shps <- lapply(shapefiles, st_read)
-
-# Loop through each shapefile
-for (i in seq_along(basin_shps)) {
-  # Get the current shapefile
-  basin_shp <- basin_shps[[i]]
+# loop through each shapefile
+for (shapefile in shapefiles) {
   
-  # Get Daymet data
-  day <- FedData::get_daymet(template = basin_shp, label = "PRCP", 
-                              elements = "prcp", years = 1980:2023, tempo = "day")
+   # read shapefile
+  basin_shp = st_read(shapefile)
   
-  # Create as data frame
-  day <- as.data.frame(day)
+  # make sure the shapefile is in the same CRS (Lambert Conformal Conic) as Daymet
+  daymet_crs = "+proj=lcc +lat_0=42.5 +lon_0=-100 +lat_1=25 +lat_2=60 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
+  basin_shp = st_transform(basin_shp, crs = daymet_crs)
   
-  # Extract day column names (dates) using pattern 
-  day_columns <- grep("^prcp.", names(day), value = TRUE)
+  # get Daymet data, retrieves as spat raster
+  day = climateR::getDaymet(AOI = basin_shp, varname = 'prcp', 
+                            startDate = '1980-01-01', endDate = '2023-12-31')
   
-  # Calculate column means since each column represents a day
-  day_means <- data.frame(Mean = colMeans(day))
-  
-  # Combine dataframe of dates and column means
-  result_df <- data.frame(Day = seq_along(day_columns), Mean = day_means)
-  
-  # Change row names to column to get dates
-  prcp <- tibble::rownames_to_column(result_df, "rn")
-  
-  # Remove "prcp." from row names 
-  prcp$rn <- gsub("prcp.", "", as.character(prcp$rn))
-  
-  # Create date column 
-  prcp$DATE <- ymd(prcp$rn)
-  prcp <- prcp %>% rename(PRCP = Mean) 
-  prcp$PRCP <- round(prcp$PRCP, digits = 2)
-  prcp <- prcp[,-c(1:2)]
-  
-  # Write to CSV with shapefile ID as filename
-  shapefile_id <- tools::file_path_sans_ext(basename(shapefiles[i]))
-  csv_filename <- file.path(csv_folder, paste0(shapefile_id,"_Daymet_prcp.csv"))
-  write.csv(prcp, file = csv_filename, row.names = FALSE)
-  
-  # Print message indicating completion for the current shapefile
-  cat("Processed shapefile:", shapefile_id, "\n")
-  
-  # Remove objects to free memory
-  rm(day, day_columns, day_means, result_df, prcp, shapefile_id, csv_filename)
-  # Garbage collector returns memory to OS
-  gc()
 }
 
+####################################################
+shp = sf::st_sfc(sf::st_point(c(-68.583, 47.237)), crs = 4326)
+
+nldi_nwis = list(featureSource = "nwissite", featureID = "USGS-01013500")
+point = discover_nhdplus_id(nldi_feature = nldi_nwis)
+
+####################################################
+raster_obj = day$prcp
+raster_values = values(raster_obj)
+raster_coordinates = xyFromCell(raster_obj, cell = 1:ncell(raster_obj))
+
+raster_df <- data.frame(x = raster_coordinates[, 1],
+                        y = raster_coordinates[, 2],
+                        value = raster_values)
+
+raster_columns = grep("^value.", names(raster_df), value = TRUE)
+
+raster_means = data.frame(Mean = colMeans(raster_df))
+ 
+###################################################
+library(raster)
+library(ncdf4)
+library(exactextractr)
+
+# daymet netcdf file for 1980 for north america
+netcdf_file = "D:/University of Texas at Dallas/CombinedDataset/Daymet_gridded/daymet_v4_daily_na_prcp_1980.nc"
+raster_data = raster::brick(netcdf_file)
+
+shapefile = st_read("D:/University of Texas at Dallas/CombinedDataset/Batch/basin_USGS-05508000.shp")
+
+if(st_crs(shapefile) != crs(raster_data)) {
+  shapefile = st_transform(shapefile, crs = crs(raster_data))
+}
+
+extent_shapefile = extent(shapefile)
+raster_cropped = crop(raster_data, extent_shapefile)
+raster_masked = mask(raster_cropped, shapefile)
+# values = exactextractr::exact_extract(raster, shapefile, 'mean')
+values = exactextractr::exact_extract(raster, shapefile)
+values_means = data.frame(Mean = colMeans(values))
