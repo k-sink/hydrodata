@@ -11,8 +11,6 @@ Obtain list of gauge ids combining MOPEX (431) and CAMELS (671) total of 1,050 m
 Download basin boundaries for watersheds using NLDI and R, save as shapefiles (1,043 basins)
 Download discharge data for 1/1/1980 to present as csv files, discharge in ft3/s using R
 
-Discharge files downloaded 1,032 gauges 
-
 ######################################################################################################
 5/16/2024
 
@@ -164,32 +162,198 @@ Resulting pixel counts were the same as those determined using QGIS method clipp
 Areas include NWIS provided drainage area (mi2), CAMELS = GAGESII (sq km), NLCD derived (pixel count * 900 = m2)
 Catchment attributes can be directly obtained using R and NLDI from dataRetrieval package
 
-Combined MOPEX and CAMELS gauge values = 1050  (7 of MOPEX gauges are not in GAGESII dataset), check to see omission reasons 
+Add leading zero to gauge id in excel, select cell, format cells, custom, put number of zeroes such as (8) 00000000 to add a leading zero to 7 digit numbers
+Find matching IDs between files, highlight the page (copy so both are on the same page), conditional formatting, duplicates, highlight red
+
+Gaugelist.csv with 1050 catchments and whether MOPEX, CAMELS or both (SAME) dataset
+Combined MOPEX and CAMELS gauge values = 1050  (7 of MOPEX gauges are not in GAGESII dataset). MOPEX did include gauges with large amounts of missing discharge data. 
 01361000    Kinderhook creek at Rossman NY      missing large amount of discharge data (10/1/1968 - 7/31/2011)
 05546500    Fox River at Wilmot WI              data availability begins on 10/1/1986
 06868000    Saline River near Wilson KS            discharge 5/11/1929 to 9/29/1963
-06884500    L Blue River at Waterville KS            not returned in NWIS request
+06884500    L Blue River at Waterville KS          discharge 6/1/1922 to 4/30/1958
 06890500    Delaware River at Valley Falls KS       discharge 6/16/1922 to 9/29/1967
 11210500    Kaweah River near three Rivers CA       discharge 5/1/1903 to 9/29/1961
 11222000    Kings River a Piedra CA                discharge 10/1/1895 to 9/29/1959
 
-Gaugelist.csv with 1043 catchments 
-Add leading zero to gauge id in excel, select cell, format cells, custom, put number of zeroes such as (8) 00000000 to add a leading zero to 7 digit numbers
-Find matching IDs between files, highlight the page (copy so both are on the same page), conditional formatting, duplicates, highlight red
+This dataset should have complete records for 1/1/1980 to 12/31/2023 (daily streamflow, temperature, precipitation)
+Combined_gages.csv with 1043 catchments (1050 - deleted the 7 missing MOPEX from GAGESII)
 
-NWIS date range for discharge for 1043 basins, a few duplicates returned in query with two different database identifiers, checked on NWIS site 
+Obtain site info for 1,043 gauges using readNWISsite() for lat, lon, area, huc attributes  (site_info.csv)
+
+Date range from whatNWISdata()
+NWIS date range for discharge for 1,043 basins, returns 1,046 entries indicating a few duplicates returned in query with two different database identifiers, checked on NWIS site 
 02196000    CAMELS    two discharge availability date ranges, starting 11/1/1929 and ending 9/29/2005 and another ending current date, taking current
                       126805 [(2)] duplicate entry deleted 
-03213000    MOPEX    Tug Fork at Litwar, WV   data available for 6/1/1930 to 9/30/1984 and then does not resume until 9/30/2019  remove gauge 
-07222500    MOPEX    Conchas River at Variadero, NM  data available for 10/1/1936 to 9/29/1996 and then resumes 6/30/2021  remove gauge
-07348000    MOPEX    Twelve Mile Bayou near Dixie, LA  data available for 10/1/1942 to 9/29/1995 and then resumes 3/9/2023  remove gauge
-12010000    CAMELS   two discharge records, data available for 10/1/1929 to current, other discharge for STILLING WELL, deleting duplicate
+03213000    MOPEX    Tug Fork at Litwar, WV   data available for 6/1/1930 to 9/30/1984 and then does not resume until 9/30/2019  remove gauge (2 entries)
+07222500    MOPEX    Conchas River at Variadero, NM  data available for 10/1/1936 to 9/29/1996 and then resumes 6/30/2021  remove gauge (2 entries)
+07348000    MOPEX    Twelve Mile Bayou near Dixie, LA  data available for 10/1/1942 to 9/29/1995 and then resumes 3/9/2023  remove gauge (2 entries)
+12010000    CAMELS   two discharge records, data available for 10/1/1929 to current, other discharge for STILLING WELL, deleting duplicate (1 entry)
+1,046 - 8 entries = 1,038 gauges  (should be 1,040 gauges if only 3 MOPEX removed)
 
-Current total 1,040 gauges 
-NWIS date range results in 1,038 gauges
+NWIS date range results in 1,038 gauges, missing 2 gauges
+07074000    Strawberry River near Poughkeepsie, AR    NO DISCHARGE DATA
+13298500    Salmon River near Challis, ID    NO DISCHARGE DATA
 
-07074000    Strawberry River near Poughkeepsie, AR
-13298500    Salmon River near Challis, ID
+Resulting in 1,038 gauges (date_range_Q.csv)
+
+Download discharge data for 1,038 gauges, returns only 1,029 (missing 9 gauges)
+02218500    Data not available after 9/29/1978
+02219500    Data not available after 9/29/1978
+04212000    Data not available after 9/29/1974
+04221500    Data not available after 9/29/1972
+05383000    Data not available after 9/29/1970
+05555500    Data not available after 9/30/1971
+07289500    Data not available after 9/29/1971
+11080500    Data not available after 9/29/1979
+13340500    Data not available after 9/29/1969
+
+Additionally, many gauges do not cover complete date range. Gauges that do not precede 1/1/1980 (Begin date) - 63 gauges
+08023080		1/10/1980
+02202600		2/14/1980
+05591550		2/20/1980
+02395120		5/2/1980
+11480390		6/20/1980
+10336645		7/7/1980
+02137727		10/1/1980
+02408540		10/1/1980
+09512280		10/1/1980
+02464146		2/5/1981
+09447800		8/1/1981
+01669520		8/14/1981
+06408700		11/1/1981
+01195100		11/4/1981
+14092750		7/1/1982
+12374250		8/1/1982
+12381400		9/28/1982
+12375900		9/29/1982
+05410490		9/30/1982
+01586610		10/1/1982
+08178880		10/1/1982
+12377150		10/1/1982
+12388400		10/1/1982
+02216180		1/1/1983
+04197170		6/1/1983
+01434025		6/8/1983
+14303200		7/1/1983
+14306340		7/1/1983
+14362250		7/1/1983
+01518862		8/1/1983
+11299600		8/24/1983
+10336740		10/1/1983
+14096850		10/1/1983
+08070200		5/1/1984
+06479215		6/6/1984
+10348850		10/1/1984
+02384540		1/30/1985
+02350900		3/7/1985
+02140991		5/1/1985
+05488200		7/1/1985
+06468250		10/1/1985
+08050800		10/1/1985
+09378170		10/1/1985
+14308990		10/1/1985
+02215100		4/1/1986
+02193340		4/16/1986
+04213075		5/14/1986
+02198100		6/7/1986
+01350080		7/18/1986
+08198500		9/30/1986
+01594950		10/1/1986
+02464360		10/1/1986
+06906800		9/11/1987
+04115265		10/1/1987
+03338780		10/1/1988
+05592575		10/1/1988
+06440200		10/1/1988
+07359610		10/1/1988
+02096846		11/1/1988
+07263295		8/10/1989
+07362587		9/14/1989
+02427250		10/1/1989
+03199000		9/6/2019
+
+Gauges that end before 12/31/2023 (End date) - 78 gauges
+13340500	0	9/14/1944	9/29/1969
+05383000	0	12/22/1913	9/29/1970
+07289500	0	10/1/1936	9/29/1971
+05555500	0	10/1/1931	9/30/1971
+04221500	0	10/1/1916	9/29/1972
+04212000	0	10/1/1922	9/29/1974
+02219500	0	1/1/1901	9/29/1978
+02218500	0	8/1/1903	9/29/1978
+11080500	0	12/1/1932	9/29/1979
+01138000	0	9/25/1935	9/30/1980
+05507500	0	10/1/1939	9/30/1981
+03136000	0	10/1/1921	4/1/1982
+11213500	0	10/1/1926	9/29/1982
+11403000	0	10/1/1950	9/30/1982
+04144000	0	10/1/1947	9/29/1983
+01329000	0	10/1/1928	6/30/1984
+03214000	0	8/1/1934	9/29/1985
+05502040	0	10/1/1939	9/30/1986
+03448000	0	6/1/1934	12/31/1986
+03521500	0	10/1/1945	9/30/1989
+14080500	0	10/1/1941	9/29/1991
+11497500	0	10/1/1953	9/30/1991
+03069000	0	10/1/1910	9/29/1993
+11401500	0	4/1/1906	9/30/1993
+07163000	0	4/1/1934	9/30/1993
+14233400	0	10/1/1947	3/7/1994
+03252500	0	4/1/1938	9/29/1994
+06454500	0	10/1/1946	9/29/1994
+03155500	0	10/1/1928	9/30/1994
+05476500	0	10/1/1951	5/11/1995
+07221000	0	10/1/1919	9/29/1996
+03070000	0	10/1/1923	9/29/1996
+09442692	0	7/1/1966	9/30/1996
+14232500	0	10/25/1910	4/30/1997
+11281000	0	4/1/1923	9/30/2002
+01329500	0	10/1/1922	9/29/2003
+12098500	0	10/1/1928	9/30/2003
+02349500	0	10/1/1904	2/29/2004
+02273000	0	10/1/1928	9/29/2004
+02165000	0	4/1/1939	9/29/2004
+03050500	0	10/1/1944	9/29/2004
+06291500	0	4/1/1939	9/29/2009
+06154410	0	8/1/1972	9/30/2009
+12383500	0	8/1/1910	9/29/2010
+02125000	0	4/1/1954	9/29/2010
+12388400	0	10/1/1982	9/29/2010*
+09035800	0	10/1/1965	9/29/2011
+02430615	0	6/9/1975	9/29/2011
+10336740	0	10/1/1983	9/29/2011*
+07307800	0	12/1/1959	10/1/2011
+02342933	0	10/1/1963	10/6/2011
+03238500	0	10/1/1924	1/16/2012
+04127918	0	4/1/1972	5/30/2012
+04233000	0	3/3/1937	9/29/2012
+03592718	0	5/17/1973	3/5/2013
+04161580	0	10/1/1964	1/31/2014
+02112360	0	4/1/1964	9/29/2014
+02112120	0	4/1/1964	10/12/2014
+03338780	0	10/1/1988	11/12/2014*
+12147500	0	10/1/1952	9/29/2016
+06225500	0	10/1/1945	9/30/2017
+02464360	0	10/1/1986	9/30/2018*
+02464146	0	2/5/1981	10/9/2018*
+03049000	0	10/1/1940	11/15/2018
+03500240	0	7/1/1961	3/25/2019
+03438000	0	2/6/1940	6/30/2020
+01594950	0	10/1/1986	7/1/2020*
+06311000	0	9/1/1946	10/1/2020
+12374250	0	8/1/1982	10/4/2020*
+12375900	0	9/29/1982	10/4/2020*
+02479560	0	10/1/1973	10/13/2020
+08340500	0	10/1/1943	1/12/2021
+06278300	0	10/1/1956	10/4/2022
+06280300	0	10/1/1956	10/5/2022
+11230500	0	10/1/1921	9/30/2023
+11237500	0	12/1/1927	9/30/2023
+06746095	0	10/1/1978	10/16/2023
+03410500	0	9/11/1942	12/8/2023
+* gauges that do not match begin AND end date (8 gauges)
+
+FINAL TOTAL GAGES = 905 (removed 145 gauges from 1,050 ... 84 CAMELS, 1 common gauge, 60 MOPEX)
 
 
 
