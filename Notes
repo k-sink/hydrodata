@@ -355,5 +355,105 @@ Gauges that end before 12/31/2023 (End date) - 78 gauges
 
 FINAL TOTAL GAGES = 905 (removed 145 gauges from 1,050 ... 84 CAMELS, 1 common gauge, 60 MOPEX)
 
+######################################################################################################
+6/19/2024
+
+Download shapefiles (basin boundaries) for 905 gauges
+Use nhdplusTools package in R
+get_nldi_basin() returns sf data.frame with result basin boundary for given NLDI feature, resolves to nearest NHDPlus catchment divide. 
+See https://waterdata.usgs.gov/blog/nldi-intro/
+requires format of "USGS-00000000" for gauge 
+In excel, first column put USGS, second column put gauge number, in third column, 
+=CONCATENATE(A2,"-",TEXT(B2,"00000000"))
+This maintains leading zeroes for gauges, saved as NWIS_ID.csv 
+
+Shapefiles, 4 files each (3,620) 
+
+dataRetrieval R package
+whatNWISdata()   saved as USGS_parameters.csv  (imports a table of available parameters, period of record, and count, see https://waterservices.usgs.gov/docs/site-service/)
+Name	            Type	    Description
+agency_cd	        character	The NWIS code for the agency reporting the data
+site_no	            character	The USGS site number
+station_nm	        character	Site name
+site_tp_cd	        character	Site type
+dec_lat_va	        numeric	    Decimal latitude
+dec_long_va	        numeric	    Decimal longitude
+coord_acy_cd	    character	Latitude-longitude accuracy
+dec_coord_datum_cd	character	Decimal Latitude-longitude datum
+alt_va	            character	Altitude of Gage or land surface
+alt_acy_va	        character	Altitude accuracy
+alt_datum_cd	    character	Altitude datum
+huc_cd	            character	Hydrologic unit code
+data_type_cd	    character	Data type
+parm_cd	            character	Parameter code
+stat_cd	            character	Statistical code
+dd_nu	            character	Internal database key
+loc_web_ds	        character	Additional measurement description
+medium_grp_cd	    character	Medium group code
+parm_grp_cd	        character	Parameter group code
+srs_id	            character	SRS ID
+access_cd	        character	Access code
+begin_date	        Date	    Begin date
+end_date	        Date	    End date
+count_nu	        integer	    Record count
+parameter_group_nm	character	Parameter group name
+parameter_nm	    character	Parameter name
+casrn	            character	Chemical Abstracts Service (CAS) Registry Number
+srsname	            character	Substance Registry Services
+parameter_units	    character	Parameter units
+
+dataRetrieval R package
+readNWISsite()   saved as USGS_siteinfo.csv (imports data from USGS site file site, gets data from https://waterservices.usgs/gov/)
+Name	            Type	    Description
+agency_cd	        character	The NWIS code for the agency reporting the data
+site_no	            character	The USGS site number
+station_nm	        character	Site name
+site_tp_cd	        character	Site type
+lat_va	            numeric	    DMS latitude
+long_va	            numeric	    DMS longitude
+dec_lat_va	        numeric	    Decimal latitude
+dec_long_va	        numeric	    Decimal longitude
+coord_meth_cd	    character	Latitude-longitude method
+coord_acy_cd	    character	Latitude-longitude accuracy
+coord_datum_cd	    character	Latitude-longitude datum
+dec_coord_datum_cd	character	Decimal Latitude-longitude datum
+district_cd	        character	District code
+state_cd	        character	State code
+county_cd	        character	County code
+country_cd	        character	Country code
+land_net_ds	        character	Land net location description
+map_nm	            character	Name of location map
+map_scale_fc	    character	Scale of location map
+alt_va	            numeric	    Altitude of Gage/land surface
+alt_meth_cd	        character	Method altitude determined
+alt_acy_va	        numeric	    Altitude accuracy
+alt_datum_cd	    character	Altitude datum
+huc_cd	            character	Hydrologic unit code
+basin_cd	        character	Drainage basin code
+topo_cd	            character	Topographic setting code
+instruments_cd	    character	Flags for instruments at site
+construction_dt	    character	Date of first construction
+inventory_dt	    character	Date site established or inventoried
+drain_area_va	    numeric	    Drainage area
+contrib_drain_area_va	numeric	Contributing drainage area
+tz_cd	            character	Time Zone abbreviation
+local_time_fg	    character	Site honors Daylight Savings Time
+reliability_cd	    character	Data reliability code
+gw_file_cd	        character	Data-other GW files
+nat_aqfr_cd	        character	National aquifer code
+aqfr_cd	            character	Local aquifer code
+aqfr_type_cd	    character	Local aquifer type code
+well_depth_va	    numeric	    Well depth
+hole_depth_va	    numeric	    Hole depth
+depth_src_cd	    character	Source of depth data
+project_no	        character	Project number
+
+Combined site info and parameters into one file, removing redundant fields (CombinedDataset.csv) 
+Added dataset field (CAMELS, MOPEX, SAME)
+
+Create QGIS project, import decimal lat and long coordinates using NAD83 (EPSG:4269) to plot gauge locations 
+Add shapefile boundaries to check that gauge location represents the drainage basin and does not include another gauge within the same boundary
+Indicate which basins reside within another (hierarchy) smaller basins as part of large drainage basin
+Add FID as basin gauge ID (creates .qix file for shapefile)
 
 
