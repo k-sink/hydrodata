@@ -456,4 +456,29 @@ Add shapefile boundaries to check that gauge location represents the drainage ba
 Indicate which basins reside within another (hierarchy) smaller basins as part of large drainage basin
 Add FID as basin gauge ID (creates .qix file for shapefile)
 
+######################################################################################################
+6/20/2024
+
+Added columns to CombinedDatasheet excel file
+upstream_stations    lists stations that are located upstream (and within a larger basin boundary) 
+no_up                number of upstream stations *these are only based on the 905 gauges within this dataset, not all USGS NWIS stations
+
+Looked at discharge files to see if all values were indeed returned, should be 16,071 days from 1/1/1980 to 12/31/2023
+44 complete years (44*365 = 16,060) + 11 leap year days = 16,071 days
+Create a function that counts the number of columns in each discharge csv file in the folder and output dataframe 
+Discharge_days.csv
+
+######################################################################################################
+6/21/2024
+
+Find missing dates for each discharge csv file that has less than 16,071 days using function in R 
+missing_dates.csv
+dataRetrieval function shows that the date range includes 1/1/1980 to 12/31/2023 but does not account for gaps in the record
+For gauges that do not start in 1980 but later, the date range retrieval does not indicate that 
+Example is 01514000 which does not start until 9/30/2017, dataRetrieval shows range as 10/1/1930 to present (date_range_Q.csv)
+Using the downloaded discharge files for the 905 gauges, 252 gauges do not have 16,071 records, meaning there are only 653 gauges with complete records
+61 gauges have 16,070 days
+131 gauges have less than 16,000 days 
+
+
 
