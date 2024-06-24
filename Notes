@@ -352,6 +352,7 @@ Gauges that end before 12/31/2023 (End date) - 78 gauges
 06746095	0	10/1/1978	10/16/2023
 03410500	0	9/11/1942	12/8/2023
 * gauges that do not match begin AND end date (8 gauges)
+78 + 63 = 141 - 8 common dates = 133 removed due to date restrictions
 
 FINAL TOTAL GAGES = 905 (removed 145 gauges from 1,050 ... 84 CAMELS, 1 common gauge, 60 MOPEX)
 
@@ -479,6 +480,51 @@ Example is 01514000 which does not start until 9/30/2017, dataRetrieval shows ra
 Using the downloaded discharge files for the 905 gauges, 252 gauges do not have 16,071 records, meaning there are only 653 gauges with complete records
 61 gauges have 16,070 days
 131 gauges have less than 16,000 days 
+
+######################################################################################################
+6/24/2024
+
+Recheck 133 gauges for date ranges since they may actually have valid date ranges 
+Discharge_days2.csv is for the 133 gauges that were removed due to date ranges obtained from NWIS function in R
+Downloaded discharge for 1/1/1980 to 12/31/2023 and only 124 gauges were returned (9 gauges that were noted previously as missing)
+Missing 
+02218500
+02219500
+0421200
+04221500
+05383000
+05555500
+07289500
+11080500
+13340500
+
+124 gauges + 905 = 1,029 gauges
+what is an acceptable number of streamflow records to use as cutoff? should gauges have all 16,071 days?
+According to IAHS (International Association of Hydrological Sciences), at least 10 years of data is needed 
+https://iahs.info/uploads/dms/16788.39-221-226-344-06-Teng-et-al-Corrected_02Mar2011.pdf
+
+Use 10 years as cutoff assuming 365 days, no leap years (3,650 days) 
+This will then omit from the 1,029 gauges, 14
+01138000    274
+05507500    615
+03136000    815
+11213500    1,003
+11403000    1,004
+04144000    1,368
+03199000    1,578
+01329000    1,643
+01329500    2,088
+03214000    2,099
+01514000    2,284 * remove from 905 gauges
+05502040    2,465
+03448000    2,557
+03521500    3,561
+
+Add in remaining gauges to combined dataset to have a total of 1,015 gauges (1,029 - 14)
+
+
+
+
 
 
 
