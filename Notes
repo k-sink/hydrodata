@@ -153,6 +153,22 @@ Albers Conical Equal Area (30m x 30m) for NLCD2001, 2004, 2006
 95    Emergent Herbaceous Wetlands - areas where perennial herbaceous vegetation accounts for greater than 80% of vegetative cover and the soil or substrate is periodically saturated with or covered with water.
 
 
+Attempted to locate the NLCD 1992-2001 Land Cover Change Retrofit product
+https://pubs.usgs.gov/of/2008/1379/
+Emailed USGS, response received by Jim Wickham 
+Is the a specific reason you are looking for the retrofit data?  The reason I ask is because that was a one-off project to "fit" NLCD 1992 to NLCD 2001.  
+All of the subsequent releases of NLCD include updated versions of previous releases, so the 2001 dataset in the NLCD2021 database is considerably different than 
+the original NLCD2001.  You may want to consider moving to LCMAP data.  LCMAP data provide annual land cover from 1985 to present (nearly, say 2021).  USGS is 
+merging the NLCD and LCMAP programs.  The first release data subsequent to merging will be late 2024 or early 2025.  All of this gets terribly confusing for those 
+who don't play in the NLCD sandbox everyday (like me 😊), so give me a shout if you want to talk about your project's land cover needs.  We can set up a TEAMS thingy-do.
+
+Jon Dewitz also responded (6/11/2024)
+Thanks for the update Katharine.  Let me know if we can help further.  NLCD and LCMAP have combined and will be releasing a new product this fall that spans the 
+LCMAP timeframe with NLCD like classes.  
+NLCD classes and products using LCMAP mapping methodology 
+
+Downloaded LCMAP data 
+
 ######################################################################################################
 6/13/2024
 
@@ -523,8 +539,22 @@ This will then omit from the 1,029 gauges, 14
 Add in remaining gauges to combined dataset to have a total of 1,015 gauges (1,029 - 14)
 
 
+######################################################################################################
+6/25/2024
 
+snippet of code that was used when data edited to span 10/1/1980 to 9/30/2000 for spearman rank on common basins Daymet CAMELS vs Daymet V4
+# apply the function by group to add leap year rows with NA values for PRCP
+datatable2 <- datatable %>% 
+  group_by(GaugeID) %>% 
+  do(add_leap_year_rows(.)) %>% 
+  ungroup()
 
+# remove the last row of each group with year 2000 (water year ends in 9/30)
+datatable3 = datatable2 %>% 
+  group_by(GaugeID) %>% 
+  slice(1:(n() - 1)) %>% 
+  ungroup()
 
-
-
+# edit the GaugeID, remove the filepath before and the extra filename pattern before and after the gauge number
+datatable$GaugeID%<>%gsub("D:/University of Texas at Dallas/CombinedDataset/Daily_data/basin_USGS-", "",.) %>% 
+  gsub("_Daymet_prcp.csv", "", .)
