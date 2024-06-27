@@ -184,7 +184,7 @@ Find matching IDs between files, highlight the page (copy so both are on the sam
 Gaugelist.csv with 1050 catchments and whether MOPEX, CAMELS or both (SAME) dataset
 Combined MOPEX and CAMELS gauge values = 1050  (7 of MOPEX gauges are not in GAGESII dataset). MOPEX did include gauges with large amounts of missing discharge data. 
 01361000    Kinderhook creek at Rossman NY      missing large amount of discharge data (10/1/1968 - 7/31/2011)
-05546500    Fox River at Wilmot WI              data availability begins on 10/1/1986
+05546500    Fox River at Wilmot WI              data availability begins on 10/1/1986, ends on 9/30/1993
 06868000    Saline River near Wilson KS            discharge 5/11/1929 to 9/29/1963
 06884500    L Blue River at Waterville KS          discharge 6/1/1922 to 4/30/1958
 06890500    Delaware River at Valley Falls KS       discharge 6/16/1922 to 9/29/1967
@@ -558,3 +558,11 @@ datatable3 = datatable2 %>%
 # edit the GaugeID, remove the filepath before and the extra filename pattern before and after the gauge number
 datatable$GaugeID%<>%gsub("D:/University of Texas at Dallas/CombinedDataset/Daily_data/basin_USGS-", "",.) %>% 
   gsub("_Daymet_prcp.csv", "", .)
+
+
+######################################################################################################
+6/27/2024
+
+Downloaded remaining precipitation files from daymet
+1,015 basins, 1/1/1980 - 12/31/2023
+Add in MOPEX data from prior to 1/1/1980 for gauges that contain info. Find way to note this. 
